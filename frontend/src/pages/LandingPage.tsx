@@ -174,13 +174,15 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button
-              onClick={() => navigate('/login')}
+            <a
+              href="https://t.me/EternalDespairInTheSilence"
+              target="_blank"
+              rel="noopener noreferrer"
               className="group px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl font-semibold text-lg hover:from-violet-500 hover:to-purple-500 transition-all shadow-2xl shadow-violet-500/30 flex items-center gap-2"
             >
               Связаться с менеджером
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
+            </a>
             <button className="px-8 py-4 border border-white/20 rounded-xl font-semibold text-lg hover:bg-white/5 transition-all">
               Смотреть демо
             </button>
@@ -344,12 +346,14 @@ export default function LandingPage() {
             <p className="text-slate-400 text-lg mb-8">
               Присоединяйтесь к 500+ школам, которые уже экономят время с AlgoTrack
             </p>
-            <button
-              onClick={() => navigate('/login')}
+            <a
+              href="https://t.me/EternalDespairInTheSilence"
+              target="_blank"
+              rel="noopener noreferrer"
               className="px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl font-semibold text-lg hover:from-violet-500 hover:to-purple-500 transition-all shadow-2xl shadow-violet-500/30"
             >
               Связаться с менеджером
-            </button>
+            </a>
           </div>
         </div>
       </section>

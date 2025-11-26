@@ -8,6 +8,7 @@ import {
   Zap,
   ChevronRight,
   Check,
+  CheckCircle,
   Star,
   Users,
   School,
@@ -238,44 +239,126 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">Как это работает</h2>
-            <p className="text-slate-400 text-lg">3 простых шага</p>
+            <p className="text-slate-400 text-lg">3 простых шага до автоматической обратной связи</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                step: '01',
-                title: 'Заполните карточки',
-                description: 'После урока учитель заполняет карточки учеников: процент выполнения, активность, настроение',
-                icon: Users,
-              },
-              {
-                step: '02',
-                title: 'AI генерирует ОС',
-                description: 'Нейросеть создаёт персональную обратную связь на основе данных и вашего стиля',
-                icon: Bot,
-              },
-              {
-                step: '03',
-                title: 'Бот отправляет',
-                description: 'Сообщение автоматически отправляется в WhatsApp группу родителей',
-                icon: MessageSquare,
-              },
-            ].map((item, index) => (
-              <div key={item.step} className="relative">
-                {index < 2 && (
-                  <div className="hidden md:block absolute top-12 left-full w-full h-0.5 bg-gradient-to-r from-violet-500/50 to-transparent" />
-                )}
-                <div className="text-center">
-                  <div className="w-24 h-24 mx-auto bg-gradient-to-br from-violet-500/20 to-purple-500/20 rounded-2xl flex items-center justify-center mb-6 border border-violet-500/30">
-                    <item.icon className="w-10 h-10 text-violet-400" />
+          {/* Steps with connecting line */}
+          <div className="relative">
+            {/* Horizontal connecting line */}
+            <div className="hidden md:block absolute top-12 left-[16.67%] right-[16.67%] h-1 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 rounded-full" />
+            
+            <div className="grid md:grid-cols-3 gap-8">
+              {[
+                {
+                  step: '01',
+                  title: 'Заполните карточки',
+                  description: 'После урока учитель тратит всего 2-3 минуты на заполнение карточек учеников',
+                  details: ['Процент выполнения заданий', 'Уровень активности', 'Настроение и поведение', 'Заметки по ученику'],
+                  icon: Users,
+                },
+                {
+                  step: '02',
+                  title: 'AI генерирует ОС',
+                  description: 'Нейросеть за секунды создаёт персональную обратную связь',
+                  details: ['Учитывает данные ученика', 'Адаптируется под ваш стиль', 'Даёт рекомендации родителям', 'Поддерживает разные языки'],
+                  icon: Bot,
+                },
+                {
+                  step: '03',
+                  title: 'Бот отправляет',
+                  description: 'Сообщение автоматически уходит в WhatsApp с антибан защитой',
+                  details: ['Отправка в группу родителей', 'Персональные сообщения в ЛС', 'Отложенная отправка', 'Защита от блокировки'],
+                  icon: MessageSquare,
+                },
+              ].map((item) => (
+                <div key={item.step} className="relative">
+                  <div className="text-center">
+                    <div className="w-24 h-24 mx-auto bg-gradient-to-br from-violet-500/20 to-purple-500/20 rounded-2xl flex items-center justify-center mb-6 border border-violet-500/30 relative z-10 backdrop-blur-sm">
+                      <item.icon className="w-10 h-10 text-violet-400" />
+                    </div>
+                    <div className="text-violet-400 font-mono text-sm mb-2">{item.step}</div>
+                    <h3 className="text-xl font-semibold mb-3">{item.title}</h3>
+                    <p className="text-slate-400 mb-4">{item.description}</p>
+                    <ul className="text-left text-sm text-slate-500 space-y-1 max-w-xs mx-auto">
+                      {item.details.map((detail, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                          {detail}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <div className="text-violet-400 font-mono text-sm mb-2">{item.step}</div>
-                  <h3 className="text-xl font-semibold mb-3">{item.title}</h3>
-                  <p className="text-slate-400">{item.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits for roles */}
+      <section className="relative z-10 py-24 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4">Преимущества для каждого</h2>
+            <p className="text-slate-400 text-lg">Почему AlgoTrack делает работу легче</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* For Teachers */}
+            <div className="p-8 rounded-2xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                  <Users className="w-7 h-7 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold">Для учителей</h3>
+                  <p className="text-slate-400">Экономьте до 2 часов в день</p>
                 </div>
               </div>
-            ))}
+              <ul className="space-y-3">
+                {[
+                  'Быстрое заполнение карточек — 2-3 минуты на класс',
+                  'AI пишет ОС вместо вас — больше не нужно придумывать текст',
+                  'Автоотправка в WhatsApp — не нужно копировать вручную',
+                  'Отложенная отправка — напишите ОС заранее на неделю',
+                  'История всех отзывов — легко вспомнить что было',
+                  'Шаблоны под ваш стиль — AI учится писать как вы',
+                ].map((benefit, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <span className="text-slate-300">{benefit}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* For Admins */}
+            <div className="p-8 rounded-2xl bg-gradient-to-br from-violet-500/10 to-purple-500/10 border border-violet-500/20">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 bg-violet-500/20 rounded-xl flex items-center justify-center">
+                  <Shield className="w-7 h-7 text-violet-400" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold">Для администраторов</h3>
+                  <p className="text-slate-400">Полный контроль над школой</p>
+                </div>
+              </div>
+              <ul className="space-y-3">
+                {[
+                  'PDF отчёты для родителей — красивые персональные отчёты',
+                  'Статистика по ученикам — успеваемость за все уроки',
+                  'Массовые рассылки — информируйте всех родителей сразу',
+                  'Антибан система — защита WhatsApp от блокировки',
+                  'Управление учителями — создавайте аккаунты и классы',
+                  'Аналитика школы — отслеживайте эффективность',
+                ].map((benefit, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-violet-400 flex-shrink-0 mt-0.5" />
+                    <span className="text-slate-300">{benefit}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </section>
@@ -344,7 +427,7 @@ export default function LandingPage() {
             <School className="w-16 h-16 mx-auto text-violet-400 mb-6" />
             <h2 className="text-4xl font-bold mb-4">Готовы автоматизировать отчётность?</h2>
             <p className="text-slate-400 text-lg mb-8">
-              Присоединяйтесь к 500+ школам, которые уже экономят время с AlgoTrack
+              Присоединяйтесь к 10+ школам, которые уже экономят время с AlgoTrack
             </p>
             <a
               href="https://t.me/EternalDespairInTheSilence"

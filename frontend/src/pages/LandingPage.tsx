@@ -108,10 +108,10 @@ export default function LandingPage() {
   ]
 
   const stats = [
-    { value: '500+', label: 'Школ' },
-    { value: '10 000+', label: 'Учеников' },
-    { value: '50 000+', label: 'ОС в месяц' },
-    { value: '98%', label: 'Довольных клиентов' },
+    { value: '10+', label: 'Школ' },
+    { value: '200+', label: 'Учеников' },
+    { value: '1 000+', label: 'ОС в месяц' },
+    { value: '95%', label: 'Довольных клиентов' },
   ]
 
   return (
@@ -178,7 +178,7 @@ export default function LandingPage() {
               onClick={() => navigate('/login')}
               className="group px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl font-semibold text-lg hover:from-violet-500 hover:to-purple-500 transition-all shadow-2xl shadow-violet-500/30 flex items-center gap-2"
             >
-              Начать бесплатно
+              Связаться с менеджером
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
             <button className="px-8 py-4 border border-white/20 rounded-xl font-semibold text-lg hover:bg-white/5 transition-all">
@@ -348,7 +348,7 @@ export default function LandingPage() {
               onClick={() => navigate('/login')}
               className="px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl font-semibold text-lg hover:from-violet-500 hover:to-purple-500 transition-all shadow-2xl shadow-violet-500/30"
             >
-              Попробовать бесплатно
+              Связаться с менеджером
             </button>
           </div>
         </div>
@@ -393,7 +393,7 @@ export default function LandingPage() {
               <ul className="space-y-2 text-slate-400">
                 <li>support@algoschool.org</li>
                 <li>+7 (999) 123-45-67</li>
-                <li>Telegram: @algotrack</li>
+                <li><a href="https://t.me/EternalDespairInTheSilence" target="_blank" rel="noopener noreferrer" className="hover:text-violet-400 transition-colors">Telegram: @EternalDespairInTheSilence</a></li>
               </ul>
             </div>
           </div>

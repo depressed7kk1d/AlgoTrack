@@ -50,7 +50,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="input"
-              placeholder="alexander@algoschool.org"
+              placeholder="email@example.com"
               required
             />
           </div>
@@ -80,9 +80,7 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Тестовые данные:</p>
-          <p>Email: alexander@algoschool.org</p>
-          <p>Пароль: teacher123</p>
+          <p>Нет аккаунта? <a href="https://t.me/EternalDespairInTheSilence" target="_blank" rel="noopener noreferrer" className="text-violet-600 hover:underline">Свяжитесь с нами</a></p>
         </div>
       </div>
     </div>

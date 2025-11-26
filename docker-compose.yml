@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: algotrack-postgres
+    environment:
+      POSTGRES_USER: algotrack
+      POSTGRES_PASSWORD: algotrack_password
+      POSTGRES_DB: algotrack
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U algotrack"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: algotrack-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: algotrack-backend
+    environment:
+      DATABASE_URL: postgresql://algotrack:algotrack_password@postgres:5432/algotrack
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      GREEN_API_ID: ${GREEN_API_ID}
+      GREEN_API_TOKEN: ${GREEN_API_TOKEN}
+      PORT: 3001
+      NODE_ENV: development
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: npm run start:dev
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: algotrack-worker
+    environment:
+      DATABASE_URL: postgresql://algotrack:algotrack_password@postgres:5432/algotrack
+      REDIS_URL: redis://redis:6379
+      GREEN_API_ID: ${GREEN_API_ID}
+      GREEN_API_TOKEN: ${GREEN_API_TOKEN}
+      NODE_ENV: development
+    volumes:
+      - ./worker:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: npm run start:dev
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: algotrack-frontend
+    environment:
+      VITE_API_URL: http://localhost:3001
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    command: npm run dev
+
+volumes:
+  postgres_data:
+  redis_data:
+
+
+

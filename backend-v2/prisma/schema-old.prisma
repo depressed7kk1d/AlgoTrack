@@ -1,0 +1,293 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  TEACHER
+}
+
+enum ParentType {
+  CALM
+  ANXIOUS
+  DEMANDING
+}
+
+enum ActivityLevel {
+  LOW
+  MEDIUM
+  HIGH
+  VERY_HIGH
+}
+
+enum Mood {
+  HAPPY
+  INTERESTED
+  NEUTRAL
+  TIRED
+  DISTRACTED
+}
+
+enum ReportStatus {
+  DRAFT
+  GENERATED
+  SENT
+}
+
+enum MessageType {
+  CLASS_SUMMARY
+  PERSONAL_OS
+}
+
+enum MessageStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole @default(ADMIN)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("admins")
+}
+
+model Teacher {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  password  String
+  avatar    String?
+  status    String   @default("active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  classes   Class[]
+  cards     Card[]
+
+  @@map("teachers")
+}
+
+model Parent {
+  id         String     @id @default(cuid())
+  name       String
+  email      String?    @unique
+  phone      String?
+  parentType ParentType @default(CALM) @map("parent_type")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  students   Student[]
+
+  @@map("parents")
+}
+
+model Student {
+  id                  String   @id @default(cuid())
+  name                String
+  dob                 DateTime?
+  avatar              String?
+  parentId            String   @map("parent_id")
+  externalProjectLink String?   @map("external_project_link")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  parent              Parent   @relation(fields: [parentId], references: [id])
+  classStudents       ClassStudent[]
+  cards               Card[]
+  osReports           OsReport[]
+  parentLink          ParentLink?
+
+  @@index([parentId])
+  @@map("students")
+}
+
+model Class {
+  id        String   @id @default(cuid())
+  name      String
+  teacherId String   @map("teacher_id")
+  schedule  String?  // JSON string with schedule info
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  teacher       Teacher        @relation(fields: [teacherId], references: [id])
+  classStudents ClassStudent[]
+  modules       Module[]
+  lessons       Lesson[]
+
+  @@index([teacherId])
+  @@map("classes")
+}
+
+model ClassStudent {
+  id        String   @id @default(cuid())
+  classId   String   @map("class_id")
+  studentId String   @map("student_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  class    Class   @relation(fields: [classId], references: [id])
+  student  Student @relation(fields: [studentId], references: [id])
+
+  @@unique([classId, studentId])
+  @@index([classId])
+  @@index([studentId])
+  @@map("class_students")
+}
+
+model Module {
+  id           String   @id @default(cuid())
+  classId      String   @map("class_id")
+  title        String
+  lessonsCount Int      @default(4) @map("lessons_count")
+  totalTasks   Int      @default(8) @map("total_tasks") // Общее количество задач в модуле
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  class    Class     @relation(fields: [classId], references: [id])
+  lessons  Lesson[]
+  osReports OsReport[]
+
+  @@index([classId])
+  @@map("modules")
+}
+
+model Lesson {
+  id        String   @id @default(cuid())
+  moduleId  String   @map("module_id")
+  classId   String   @map("class_id")
+  date      DateTime
+  topic     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  module   Module   @relation(fields: [moduleId], references: [id])
+  class    Class    @relation(fields: [classId], references: [id])
+  cards    Card[]
+
+  @@index([moduleId])
+  @@index([classId])
+  @@index([date])
+  @@map("lessons")
+}
+
+model Card {
+  id                String        @id @default(cuid())
+  lessonId          String        @map("lesson_id")
+  studentId         String        @map("student_id")
+  activityLevel     ActivityLevel @map("activity_level")
+  skills            Json          // Array of strings
+  mood              Mood
+  notes             String        @db.Text
+  recommendation    String?       @db.Text
+  percentCompletion Float         @default(0) @map("percent_completion")
+  taskCompletedCount Int?         @default(0) @map("task_completed_count")
+  taskTotalForLesson Int?         @default(1) @map("task_total_for_lesson")
+  externalProjectLink String?      @map("external_project_link")
+  createdByTeacherId String        @map("created_by_teacher_id")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  editedAt           DateTime?     @map("edited_at")
+  editedByTeacherId  String?       @map("edited_by_teacher_id")
+
+  lesson            Lesson        @relation(fields: [lessonId], references: [id])
+  student           Student       @relation(fields: [studentId], references: [id])
+  teacher           Teacher       @relation(fields: [createdByTeacherId], references: [id])
+
+  @@index([lessonId])
+  @@index([studentId])
+  @@index([createdByTeacherId])
+  @@index([createdAt])
+  @@map("cards")
+}
+
+model OsReport {
+  id          String      @id @default(cuid())
+  moduleId    String      @map("module_id")
+  studentId   String      @map("student_id")
+  generatedAt DateTime    @default(now()) @map("generated_at")
+  reportHtml  String      @db.Text @map("report_html")
+  reportPdfUrl String?    @map("report_pdf_url")
+  status      ReportStatus @default(DRAFT)
+  sentAt      DateTime?   @map("sent_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  module      Module      @relation(fields: [moduleId], references: [id])
+  student     Student     @relation(fields: [studentId], references: [id])
+
+  @@unique([moduleId, studentId])
+  @@index([moduleId])
+  @@index([studentId])
+  @@index([status])
+  @@map("os_reports")
+}
+
+model MessageTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  content   String   @db.Text
+  variables Json?    // Array of available variables
+  parentType ParentType? @map("parent_type")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("message_templates")
+}
+
+model MessageQueue {
+  id         String        @id @default(cuid())
+  type       MessageType
+  payload    Json          // Message data
+  status     MessageStatus @default(PENDING)
+  attempts   Int           @default(0)
+  lastError  String?       @db.Text @map("last_error")
+  createdAt  DateTime      @default(now()) @map("created_at")
+  processedAt DateTime?    @map("processed_at")
+
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@map("message_queue")
+}
+
+model ParentLink {
+  id        String   @id @default(cuid())
+  studentId String   @unique @map("student_id")
+  linkToken String   @unique @map("link_token")
+  expiresAt DateTime? @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  student   Student  @relation(fields: [studentId], references: [id])
+
+  @@index([linkToken])
+  @@map("parent_links")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String   @map("actor_id")
+  actorType String   @map("actor_type") // "teacher" | "admin"
+  action    String
+  details   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+

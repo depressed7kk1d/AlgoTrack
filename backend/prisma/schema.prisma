@@ -1,0 +1,536 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum UserRole {
+  SUPER_ADMIN  // Главный админ - создаёт админов, настройки API
+  ADMIN        // Админ школы - создаёт учителей, классы, отправляет персональную ОС
+  TEACHER      // Учитель - заполняет карточки, отправляет ОС в группу
+}
+
+enum ParentType {
+  CALM       // Спокойный родитель
+  ANXIOUS    // Тревожный родитель
+  DEMANDING  // Требовательный родитель
+}
+
+enum ActivityLevel {
+  LOW
+  MEDIUM
+  HIGH
+  VERY_HIGH
+}
+
+enum Mood {
+  HAPPY
+  INTERESTED
+  NEUTRAL
+  TIRED
+  DISTRACTED
+}
+
+enum ReportStatus {
+  DRAFT
+  GENERATED
+  SENT
+}
+
+enum MessageType {
+  CLASS_SUMMARY   // ОС по уроку в группу
+  PERSONAL_OS     // Персональная ОС в ЛС родителю
+}
+
+enum MessageStatus {
+  PENDING     // Ожидает отправки
+  SCHEDULED   // Запланировано на будущее
+  PROCESSING  // В процессе
+  SENT        // Отправлено
+  FAILED      // Ошибка
+  CANCELLED   // Отменено
+}
+
+// ==================== AI ENUMS ====================
+
+enum AIProvider {
+  GIGACHAT
+  OPENAI
+  DEEPSEEK
+  YANDEXGPT
+}
+
+enum GigaChatScope {
+  GIGACHAT_API_PERS   // Физические лица
+  GIGACHAT_API_B2B    // ИП и юр. лица (платные пакеты)
+  GIGACHAT_API_CORP   // ИП и юр. лица (pay-as-you-go)
+}
+
+// ==================== USERS ====================
+
+// Супер-админ (главный админ) - один на всю систему
+model SuperAdmin {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("super_admins")
+}
+
+// Админ школы (может быть много админов из разных городов/школ)
+model Admin {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  phone     String?
+  city      String?  // Город админа
+  schoolName String? @map("school_name") // Название школы/филиала
+  isActive  Boolean  @default(true) @map("is_active")
+  
+  // Персональный шаблон ОС - пример обратной связи от этого админа
+  osTemplateExample String? @map("os_template_example") @db.Text
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  teachers  Teacher[]
+  classes   Class[]
+  
+  // Настройки WhatsApp для этого админа
+  whatsAppSettings WhatsAppSettings?
+  
+  // Рассылки этого админа
+  broadcasts Broadcast[]
+
+  @@map("admins")
+}
+
+// Учитель (создаётся админом)
+model Teacher {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  password  String
+  avatar    String?
+  isActive  Boolean  @default(true) @map("is_active")
+  adminId   String   @map("admin_id") // Какой админ создал учителя
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  admin     Admin    @relation(fields: [adminId], references: [id])
+  classes   Class[]
+  cards     Card[]
+
+  @@index([adminId])
+  @@map("teachers")
+}
+
+// ==================== PARENTS & STUDENTS ====================
+
+model Parent {
+  id         String     @id @default(cuid())
+  name       String
+  phone      String?    @unique // WhatsApp номер для персональной ОС
+  email      String?    @unique
+  parentType ParentType @default(CALM) @map("parent_type")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  students   Student[]
+
+  @@map("parents")
+}
+
+model Student {
+  id                  String   @id @default(cuid())
+  name                String
+  dob                 DateTime?
+  avatar              String?
+  parentId            String   @map("parent_id")
+  externalProjectLink String?  @map("external_project_link")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  parent              Parent   @relation(fields: [parentId], references: [id])
+  classStudents       ClassStudent[]
+  cards               Card[]
+  osReports           OsReport[]
+  parentLink          ParentLink?
+
+  @@index([parentId])
+  @@map("students")
+}
+
+// ==================== CLASSES & MODULES ====================
+
+// Класс (группа) - создаётся админом, привязан к учителю
+model Class {
+  id                String   @id @default(cuid())
+  name              String
+  teacherId         String   @map("teacher_id")
+  adminId           String   @map("admin_id") // Какой админ создал класс
+  schedule          String?  // JSON string with schedule info
+  whatsappGroupId   String?  @map("whatsapp_group_id") // ID группы WhatsApp (для GreenAPI)
+  whatsappGroupName String?  @map("whatsapp_group_name") // Название группы
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  teacher       Teacher        @relation(fields: [teacherId], references: [id])
+  admin         Admin          @relation(fields: [adminId], references: [id])
+  classStudents ClassStudent[]
+  modules       Module[]
+  lessons       Lesson[]
+
+  @@index([teacherId])
+  @@index([adminId])
+  @@map("classes")
+}
+
+model ClassStudent {
+  id        String   @id @default(cuid())
+  classId   String   @map("class_id")
+  studentId String   @map("student_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  class    Class   @relation(fields: [classId], references: [id])
+  student  Student @relation(fields: [studentId], references: [id])
+
+  @@unique([classId, studentId])
+  @@index([classId])
+  @@index([studentId])
+  @@map("class_students")
+}
+
+// Модуль (обычно 4 урока)
+model Module {
+  id               String   @id @default(cuid())
+  classId          String   @map("class_id")
+  title            String
+  description      String?  @db.Text // Описание модуля для нейросети
+  lessonsCount     Int      @default(4) @map("lessons_count")
+  totalTasks       Int      @default(8) @map("total_tasks")
+  osGeneratedAt    DateTime? @map("os_generated_at") // Когда была сгенерирована персональная ОС
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  class    Class     @relation(fields: [classId], references: [id])
+  lessons  Lesson[]
+  osReports OsReport[]
+
+  @@index([classId])
+  @@map("modules")
+}
+
+// ==================== LESSONS & CARDS ====================
+
+model Lesson {
+  id             String   @id @default(cuid())
+  moduleId       String   @map("module_id")
+  classId        String   @map("class_id")
+  lessonNumber   Int      @default(1) @map("lesson_number") // Номер урока в модуле (1-4)
+  date           DateTime
+  topic          String
+  description    String?  @db.Text // Описание что проходили (из методички)
+  homework       String?  @db.Text // Домашнее задание
+  osSentAt       DateTime? @map("os_sent_at") // Когда отправили ОС по уроку
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  module   Module   @relation(fields: [moduleId], references: [id])
+  class    Class    @relation(fields: [classId], references: [id])
+  cards    Card[]
+
+  @@index([moduleId])
+  @@index([classId])
+  @@index([date])
+  @@map("lessons")
+}
+
+// Карточка ученика по уроку (заполняет учитель)
+model Card {
+  id                  String        @id @default(cuid())
+  lessonId            String        @map("lesson_id")
+  studentId           String        @map("student_id")
+  wasPresent          Boolean       @default(true) @map("was_present") // Был ли на уроке
+  activityLevel       ActivityLevel @map("activity_level")
+  skills              Json          // Array of strings - что освоил
+  mood                Mood
+  notes               String        @db.Text // Заметки учителя
+  recommendation      String?       @db.Text
+  percentCompletion   Float         @default(0) @map("percent_completion") // % выполнения
+  taskCompletedCount  Int?          @default(0) @map("task_completed_count")
+  taskTotalForLesson  Int?          @default(1) @map("task_total_for_lesson")
+  externalProjectLink String?       @map("external_project_link")
+  createdByTeacherId  String        @map("created_by_teacher_id")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  editedAt            DateTime?     @map("edited_at")
+  editedByTeacherId   String?       @map("edited_by_teacher_id")
+
+  lesson   Lesson   @relation(fields: [lessonId], references: [id])
+  student  Student  @relation(fields: [studentId], references: [id])
+  teacher  Teacher  @relation(fields: [createdByTeacherId], references: [id])
+
+  @@index([lessonId])
+  @@index([studentId])
+  @@index([createdByTeacherId])
+  @@index([createdAt])
+  @@map("cards")
+}
+
+// ==================== REPORTS ====================
+
+// Персональная ОС по модулю (4 урока) - генерируется админом
+model OsReport {
+  id             String       @id @default(cuid())
+  moduleId       String       @map("module_id")
+  studentId      String       @map("student_id")
+  generatedAt    DateTime     @default(now()) @map("generated_at")
+  reportText     String       @db.Text @map("report_text") // Текст ОС для копирования
+  reportHtml     String       @db.Text @map("report_html") // HTML для PDF
+  reportPdfUrl   String?      @map("report_pdf_url")
+  status         ReportStatus @default(DRAFT)
+  sentAt         DateTime?    @map("sent_at")
+  avgCompletion  Float        @default(0) @map("avg_completion") // Средний % выполнения
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  module      Module      @relation(fields: [moduleId], references: [id])
+  student     Student     @relation(fields: [studentId], references: [id])
+
+  @@unique([moduleId, studentId])
+  @@index([moduleId])
+  @@index([studentId])
+  @@index([status])
+  @@map("os_reports")
+}
+
+// ==================== MESSAGE QUEUE ====================
+
+// Очередь сообщений с антибан системой
+model MessageQueue {
+  id            String        @id @default(cuid())
+  type          MessageType
+  payload       Json          // Данные сообщения
+  chatId        String        @map("chat_id") // WhatsApp ID (группа или личка)
+  status        MessageStatus @default(PENDING)
+  scheduledFor  DateTime?     @map("scheduled_for") // Запланированная дата отправки
+  priority      Int           @default(0) // Приоритет (выше = важнее)
+  attempts      Int           @default(0)
+  maxAttempts   Int           @default(3) @map("max_attempts")
+  lastError     String?       @db.Text @map("last_error")
+  sentAt        DateTime?     @map("sent_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  processedAt   DateTime?     @map("processed_at")
+  
+  // Для привязки к учителю/уроку
+  lessonId      String?       @map("lesson_id")
+  teacherId     String?       @map("teacher_id")
+  adminId       String?       @map("admin_id")
+
+  @@index([status])
+  @@index([type])
+  @@index([scheduledFor])
+  @@index([createdAt])
+  @@map("message_queue")
+}
+
+// Антибан настройки для WhatsApp
+model AntiBanSettings {
+  id                     String   @id @default(cuid())
+  minDelaySeconds        Int      @default(30) @map("min_delay_seconds") // Мин задержка между сообщениями
+  maxDelaySeconds        Int      @default(120) @map("max_delay_seconds") // Макс задержка
+  maxMessagesPerHour     Int      @default(20) @map("max_messages_per_hour") // Лимит сообщений в час
+  maxMessagesPerDay      Int      @default(100) @map("max_messages_per_day") // Лимит в день
+  pauseStartHour         Int      @default(22) @map("pause_start_hour") // Начало паузы (ночь)
+  pauseEndHour           Int      @default(8) @map("pause_end_hour") // Конец паузы
+  isEnabled              Boolean  @default(true) @map("is_enabled")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  @@map("anti_ban_settings")
+}
+
+// Статистика отправки (для антибана)
+model MessageStats {
+  id           String   @id @default(cuid())
+  date         DateTime @db.Date // Дата
+  hour         Int      // Час (0-23)
+  messagesSent Int      @default(0) @map("messages_sent")
+  
+  @@unique([date, hour])
+  @@index([date])
+  @@map("message_stats")
+}
+
+// ==================== TEMPLATES ====================
+
+model MessageTemplate {
+  id         String      @id @default(cuid())
+  name       String
+  type       MessageType // CLASS_SUMMARY или PERSONAL_OS
+  content    String      @db.Text
+  variables  Json?       // Array of available variables
+  parentType ParentType? @map("parent_type") // Для персонализации по типу родителя
+  isDefault  Boolean     @default(false) @map("is_default")
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+
+  @@map("message_templates")
+}
+
+// AI промпты для генерации
+model AIPrompt {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  type        String   // "class_summary" | "personal_os" | "pdf_report"
+  systemPrompt String  @db.Text @map("system_prompt")
+  userPrompt  String   @db.Text @map("user_prompt") // Шаблон с переменными {variable}
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("ai_prompts")
+}
+
+// ==================== LINKS & LOGS ====================
+
+model ParentLink {
+  id        String    @id @default(cuid())
+  studentId String    @unique @map("student_id")
+  linkToken String    @unique @map("link_token")
+  expiresAt DateTime? @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  student   Student   @relation(fields: [studentId], references: [id])
+
+  @@index([linkToken])
+  @@map("parent_links")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String   @map("actor_id")
+  actorType String   @map("actor_type") // "super_admin" | "admin" | "teacher"
+  action    String
+  details   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ==================== SETTINGS ====================
+
+// AI Settings
+model AISettings {
+  id              String     @id @default(cuid())
+  provider        AIProvider @default(GIGACHAT)
+  isEnabled       Boolean    @default(false) @map("is_enabled")
+  
+  // ========== GigaChat (Сбер) ==========
+  gigachatAuthKey   String?        @map("gigachat_auth_key")
+  gigachatScope     GigaChatScope  @default(GIGACHAT_API_PERS) @map("gigachat_scope")
+  gigachatModel     String?        @default("GigaChat-2") @map("gigachat_model")
+  
+  // ========== OpenAI (ChatGPT) ==========
+  openaiApiKey      String?    @map("openai_api_key")
+  openaiModel       String?    @default("gpt-3.5-turbo") @map("openai_model")
+  openaiBaseUrl     String?    @map("openai_base_url")
+  
+  // ========== DeepSeek ==========
+  deepseekApiKey    String?    @map("deepseek_api_key")
+  deepseekModel     String?    @default("deepseek-chat") @map("deepseek_model")
+  
+  // ========== YandexGPT ==========
+  yandexApiKey      String?    @map("yandex_api_key")
+  yandexFolderId    String?    @map("yandex_folder_id")
+  yandexModel       String?    @default("yandexgpt-lite") @map("yandex_model")
+  
+  // ========== Common ==========
+  temperature       Float      @default(0.7)
+  maxTokens         Int        @default(1500) @map("max_tokens")
+  
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+
+  @@map("ai_settings")
+}
+
+// WhatsApp/GreenAPI Settings
+model WhatsAppSettings {
+  id            String   @id @default(cuid())
+  isEnabled     Boolean  @default(false) @map("is_enabled")
+  greenApiId    String?  @map("green_api_id")
+  greenApiToken String?  @map("green_api_token")
+  
+  // Привязка к админу (если null - глобальные настройки SuperAdmin)
+  adminId       String?  @unique @map("admin_id")
+  admin         Admin?   @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("whatsapp_settings")
+}
+
+// ==================== BROADCAST (Рассылки) ====================
+
+model Broadcast {
+  id              String   @id @default(cuid())
+  name            String   // Название рассылки
+  messages        Json     // Массив вариантов сообщений [{text, imageUrl?}]
+  targetType      String   @map("target_type") // ALL_GROUPS, SELECTED_GROUPS, ALL_PARENTS
+  targetIds       String[] @map("target_ids") // ID групп если SELECTED_GROUPS
+  
+  status          String   @default("PENDING") // PENDING, SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+  scheduledFor    DateTime? @map("scheduled_for")
+  startedAt       DateTime? @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+  
+  totalRecipients Int      @default(0) @map("total_recipients")
+  sentCount       Int      @default(0) @map("sent_count")
+  failedCount     Int      @default(0) @map("failed_count")
+  
+  adminId         String   @map("admin_id")
+  admin           Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  
+  recipients      BroadcastRecipient[]
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("broadcasts")
+}
+
+model BroadcastRecipient {
+  id             String   @id @default(cuid())
+  broadcastId    String   @map("broadcast_id")
+  broadcast      Broadcast @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+  
+  chatId         String   @map("chat_id") // WhatsApp ID
+  recipientName  String?  @map("recipient_name")
+  messageVariant Int      @default(0) @map("message_variant") // Какой вариант сообщения
+  
+  status         String   @default("PENDING") // PENDING, SENDING, SENT, FAILED
+  sentAt         DateTime? @map("sent_at")
+  error          String?
+  
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("broadcast_recipients")
+}

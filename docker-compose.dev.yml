@@ -1,0 +1,41 @@
+version: '3.8'
+
+# Для локальной разработки - только БД и Redis
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: algotrack-postgres-dev
+    environment:
+      POSTGRES_USER: algotrack
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: algotrack
+    ports:
+      - "5432:5432"  # Проброс порта для локальной разработки
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U algotrack"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: algotrack-redis-dev
+    ports:
+      - "6379:6379"  # Проброс порта для локальной разработки
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+

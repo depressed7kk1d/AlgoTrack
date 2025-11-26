@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: algotrack-postgres-prod
+    environment:
+      POSTGRES_USER: algotrack
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: algotrack
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U algotrack"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: algotrack-redis-prod
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: algotrack-backend-prod
+    environment:
+      DATABASE_URL: postgresql://algotrack:${POSTGRES_PASSWORD}@postgres:5432/algotrack
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      GREEN_API_ID: ${GREEN_API_ID}
+      GREEN_API_TOKEN: ${GREEN_API_TOKEN}
+      FRONTEND_URL: https://algoschool.org
+      PORT: 3001
+      NODE_ENV: production
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: algotrack-worker-prod
+    environment:
+      DATABASE_URL: postgresql://algotrack:${POSTGRES_PASSWORD}@postgres:5432/algotrack
+      REDIS_URL: redis://redis:6379
+      GREEN_API_ID: ${GREEN_API_ID}
+      GREEN_API_TOKEN: ${GREEN_API_TOKEN}
+      PDF_DIR: /app/uploads/pdfs
+      NODE_ENV: production
+    volumes:
+      - pdf_uploads:/app/uploads/pdfs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=https://algoschool.org/api
+    container_name: algotrack-frontend-prod
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  pdf_uploads:
+
+
+

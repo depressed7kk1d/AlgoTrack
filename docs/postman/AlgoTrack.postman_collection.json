@@ -1,0 +1,346 @@
+{
+  "info": {
+    "name": "AlgoTrack API",
+    "description": "API для платформы автоматизации отчетов Алгоритмика",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001/api",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alexander@algoschool.org\",\n  \"password\": \"teacher123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"access_token\", jsonData.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Classes",
+      "item": [
+        {
+          "name": "Get All Classes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/classes",
+              "host": ["{{base_url}}"],
+              "path": ["classes"]
+            }
+          }
+        },
+        {
+          "name": "Get Class by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/classes/:id",
+              "host": ["{{base_url}}"],
+              "path": ["classes", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "class_id_here"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Class Students",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/classes/:id/students",
+              "host": ["{{base_url}}"],
+              "path": ["classes", ":id", "students"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "class_id_here"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cards",
+      "item": [
+        {
+          "name": "Create Card",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lessonId\": \"lesson_id_here\",\n  \"studentId\": \"student_id_here\",\n  \"activityLevel\": \"HIGH\",\n  \"skills\": [\"понимание концепта\", \"работа с API\"],\n  \"mood\": \"INTERESTED\",\n  \"notes\": \"Активный, задавал вопросы. Начал работу над проектом 'Генератор аватаров'.\",\n  \"recommendation\": \"Показать примеры prompt engineering, попрактиковать генерацию изображений дома.\",\n  \"taskCompletedCount\": 2,\n  \"taskTotalForLesson\": 2,\n  \"externalProjectLink\": \"https://platform.example.com/projects/student-project\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/cards",
+              "host": ["{{base_url}}"],
+              "path": ["cards"]
+            }
+          }
+        },
+        {
+          "name": "Get Cards by Lesson",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/cards/lesson/:lessonId",
+              "host": ["{{base_url}}"],
+              "path": ["cards", "lesson", ":lessonId"],
+              "variable": [
+                {
+                  "key": "lessonId",
+                  "value": "lesson_id_here"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Card by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/cards/:id",
+              "host": ["{{base_url}}"],
+              "path": ["cards", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "card_id_here"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Card",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Обновленные заметки\",\n  \"recommendation\": \"Обновленные рекомендации\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/cards/:id",
+              "host": ["{{base_url}}"],
+              "path": ["cards", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "card_id_here"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Messages",
+      "item": [
+        {
+          "name": "Generate Class Summary",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lessonId\": \"lesson_id_here\",\n  \"templateId\": \"default\",\n  \"nextLessonDate\": \"08.11.2025\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/messages/generate-summary",
+              "host": ["{{base_url}}"],
+              "path": ["messages", "generate-summary"]
+            }
+          }
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lessonId\": \"lesson_id_here\",\n  \"chatId\": \"79991234567\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/messages/send",
+              "host": ["{{base_url}}"],
+              "path": ["messages", "send"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Generate OS Report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"moduleId\": \"module_id_here\",\n  \"studentId\": \"student_id_here\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/reports/generate",
+              "host": ["{{base_url}}"],
+              "path": ["reports", "generate"]
+            }
+          }
+        },
+        {
+          "name": "Get Student Reports",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports/student/:studentId",
+              "host": ["{{base_url}}"],
+              "path": ["reports", "student", ":studentId"],
+              "variable": [
+                {
+                  "key": "studentId",
+                  "value": "student_id_here"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Parents",
+      "item": [
+        {
+          "name": "Get Student by Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/parent/:token",
+              "host": ["{{base_url}}"],
+              "path": ["parent", ":token"],
+              "variable": [
+                {
+                  "key": "token",
+                  "value": "parent_link_token_here"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+
+
+

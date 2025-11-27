@@ -107,8 +107,11 @@ export default function MainLayout({ children, title }: MainLayoutProps) {
         {/* Navigation */}
         <nav className="p-4 space-y-1">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path || 
-              (item.path !== '/' && location.pathname.startsWith(item.path))
+            // Для главных страниц (/admin, /super-admin, /teacher) - только точное совпадение
+            const isHomePage = ['/admin', '/super-admin', '/teacher'].includes(item.path)
+            const isActive = isHomePage 
+              ? location.pathname === item.path
+              : location.pathname === item.path || location.pathname.startsWith(item.path + '/')
             return (
               <button
                 key={item.path}

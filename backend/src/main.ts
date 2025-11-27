@@ -1,7 +1,7 @@
-// Polyfill для crypto (для Node.js < 19)
-import * as crypto from 'crypto';
+// Polyfill для crypto.randomUUID (для Node.js < 19)
+import { webcrypto } from 'crypto';
 if (typeof globalThis.crypto === 'undefined') {
-  (globalThis as any).crypto = crypto;
+  (globalThis as any).crypto = webcrypto;
 }
 
 import { NestFactory } from '@nestjs/core';

@@ -14,7 +14,8 @@ import {
   BookOpen,
   X,
   Loader2,
-  Check
+  Check,
+  RotateCcw
 } from 'lucide-react'
 
 interface Admin {
@@ -78,6 +79,15 @@ export default function AdminsManagement() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       await api.delete(`/super-admin/admins/${id}`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admins'] })
+    },
+  })
+
+  const activateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.patch(`/super-admin/admins/${id}/activate`)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admins'] })
@@ -186,15 +196,31 @@ export default function AdminsManagement() {
                   <button
                     onClick={() => openEditModal(admin)}
                     className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                    title="Редактировать"
                   >
                     <Edit2 className="w-4 h-4 text-slate-600" />
                   </button>
-                  <button
-                    onClick={() => handleDelete(admin)}
-                    className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </button>
+                  {admin.isActive ? (
+                    <button
+                      onClick={() => handleDelete(admin)}
+                      className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Деактивировать"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (confirm(`Активировать администратора "${admin.name}"?`)) {
+                          activateMutation.mutate(admin.id)
+                        }
+                      }}
+                      className="p-2 hover:bg-green-50 rounded-lg transition-colors"
+                      title="Активировать"
+                    >
+                      <RotateCcw className="w-4 h-4 text-green-500" />
+                    </button>
+                  )}
                 </div>
               </div>
 

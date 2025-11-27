@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import MainLayout from '../../components/layout/MainLayout'
 import { 
-  Plus, Edit2, Trash2, GraduationCap, Mail, Phone, BookOpen, X, Loader2, Check 
+  Plus, Edit2, Trash2, GraduationCap, Mail, Phone, BookOpen, X, Loader2, Check, RotateCcw 
 } from 'lucide-react'
 
 interface Teacher {
@@ -55,6 +55,15 @@ export default function TeachersManagement() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       await api.delete(`/admin/teachers/${id}`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-teachers'] })
+    },
+  })
+
+  const activateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.patch(`/admin/teachers/${id}/activate`)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-teachers'] })
@@ -116,8 +125,12 @@ export default function TeachersManagement() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button onClick={() => openEditModal(teacher)} className="p-2 hover:bg-slate-100 rounded-lg"><Edit2 className="w-4 h-4 text-slate-600" /></button>
-                  <button onClick={() => confirm(`Деактивировать "${teacher.name}"?`) && deleteMutation.mutate(teacher.id)} className="p-2 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4 text-red-500" /></button>
+                  <button onClick={() => openEditModal(teacher)} className="p-2 hover:bg-slate-100 rounded-lg" title="Редактировать"><Edit2 className="w-4 h-4 text-slate-600" /></button>
+                  {teacher.isActive ? (
+                    <button onClick={() => confirm(`Деактивировать "${teacher.name}"?`) && deleteMutation.mutate(teacher.id)} className="p-2 hover:bg-red-50 rounded-lg" title="Деактивировать"><Trash2 className="w-4 h-4 text-red-500" /></button>
+                  ) : (
+                    <button onClick={() => confirm(`Активировать "${teacher.name}"?`) && activateMutation.mutate(teacher.id)} className="p-2 hover:bg-green-50 rounded-lg" title="Активировать"><RotateCcw className="w-4 h-4 text-green-500" /></button>
+                  )}
                 </div>
               </div>
               <div className="space-y-2 text-sm">

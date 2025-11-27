@@ -135,6 +135,21 @@ export class AdminService {
     });
   }
 
+  async activateTeacher(adminId: string, teacherId: string) {
+    const teacher = await this.prisma.teacher.findFirst({
+      where: { id: teacherId, adminId },
+    });
+
+    if (!teacher) {
+      throw new NotFoundException('Учитель не найден');
+    }
+
+    return this.prisma.teacher.update({
+      where: { id: teacherId },
+      data: { isActive: true },
+    });
+  }
+
   // ==================== CLASSES ====================
 
   async createClass(adminId: string, dto: CreateClassDto) {

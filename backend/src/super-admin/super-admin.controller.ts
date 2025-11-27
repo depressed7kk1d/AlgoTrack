@@ -56,6 +56,12 @@ export class SuperAdminController {
     return this.superAdminService.deleteAdmin(id);
   }
 
+  @Patch('admins/:id/activate')
+  @ApiOperation({ summary: 'Активировать админа' })
+  activateAdmin(@Param('id') id: string) {
+    return this.superAdminService.activateAdmin(id);
+  }
+
   // ==================== MONITORING ====================
 
   @Get('monitoring/overview')

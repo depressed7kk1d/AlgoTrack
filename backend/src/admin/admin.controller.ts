@@ -68,6 +68,12 @@ export class AdminController {
     return this.adminService.deleteTeacher(req.user.id, id);
   }
 
+  @Patch('teachers/:id/activate')
+  @ApiOperation({ summary: 'Активировать учителя' })
+  activateTeacher(@Request() req, @Param('id') id: string) {
+    return this.adminService.activateTeacher(req.user.id, id);
+  }
+
   // ==================== CLASSES ====================
 
   @Post('classes')

@@ -146,6 +146,18 @@ export class SuperAdminService {
     });
   }
 
+  async activateAdmin(id: string) {
+    const admin = await this.prisma.admin.findUnique({ where: { id } });
+    if (!admin) {
+      throw new NotFoundException('Админ не найден');
+    }
+
+    return this.prisma.admin.update({
+      where: { id },
+      data: { isActive: true },
+    });
+  }
+
   // ==================== MONITORING ====================
 
   async getMonitoringOverview() {
